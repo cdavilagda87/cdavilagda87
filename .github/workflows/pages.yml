@@ -1,0 +1,72 @@
+name: Deploy Dashboard to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'agent.py'
+      - 'export_to_html.py'
+      - 'requirements.txt'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:   # permite ejecutarlo manualmente desde GitHub
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # 1. Checkout del código
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Python con caché de pip
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # 3. Instalar dependencias Python
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # 4. Ejecutar el agente (datos reales del BCE, con fallback a demo)
+      - name: Run agent
+        run: python agent.py --max-files 5
+        # Si el BCE está inaccesible, el agente automáticamente usa datos demo
+
+      # 5. Generar el HTML estático
+      - name: Export to static HTML
+        run: python export_to_html.py --max-rows 500
+
+      # 6. Verificar que el HTML fue generado
+      - name: Verify output
+        run: |
+          ls -lh docs/index.html
+          echo "HTML size: $(wc -c < docs/index.html) bytes"
+
+      # 7. Preparar artefacto de Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs'
+
+      # 8. Deploy a GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

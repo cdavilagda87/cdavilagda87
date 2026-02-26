@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard BCE — Índices Financieros</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        :root {--bce-blue:#003366;--bce-yellow:#F5A800;--bce-light:#f0f4f8;}
+        body         {background:var(--bce-light);font-family:'Segoe UI',sans-serif;}
+        .stat-card   {border-left:4px solid var(--bce-yellow);}
+        .stat-number {font-size:2rem;font-weight:700;color:var(--bce-blue);}
+        .table-card  {cursor:pointer;transition:transform .15s,box-shadow .15s;}
+        .table-card:hover {transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.12);}
+        .table-card.active {border:2px solid var(--bce-blue);}
+        .chart-container {position:relative;height:320px;}
+        .badge-rows  {background:var(--bce-blue);}
+        footer       {background:var(--bce-blue);color:#cdd8e3;font-size:.85rem;}
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark py-2" style="background:var(--bce-blue)">
+    <div class="container-fluid">
+        <span class="navbar-brand">
+            <i class="bi bi-bar-chart-fill me-2" style="color:var(--bce-yellow)"></i>
+            Dashboard BCE · Índices Financieros
+        </span>
+        <small class="text-white-50">Generado: 26/02/2026 20:20</small>
+    </div>
+</nav>
+
+<div class="container-fluid py-4">
+
+    <!-- Tarjetas resumen -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Tablas disponibles</div>
+                    <div class="stat-number">2</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Total de registros</div>
+                    <div class="stat-number">48</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Fuente</div>
+                    <div class="stat-number" style="font-size:1.1rem;padding-top:.5rem">BCE Ecuador</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Tipo</div>
+                    <div class="stat-number" style="font-size:1.1rem;padding-top:.5rem">
+                        <i class="bi bi-github me-1"></i>GitHub Pages
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Lista de tablas -->
+        <div class="col-lg-3">
+            <h6 class="text-uppercase text-muted fw-bold mb-2">
+                <i class="bi bi-table me-1"></i>Conjuntos de datos
+            </h6>
+            
+        <div class="card table-card mb-2 shadow-sm"
+             onclick="selectTable('data_demo_IndicesFinancieros', this)"
+             data-table="data_demo_IndicesFinancieros">
+            <div class="card-body py-2 px-3">
+                <div class="fw-semibold small text-truncate" title="IndicesFinancieros">IndicesFinancieros</div>
+                <div class="d-flex justify-content-between align-items-center mt-1">
+                    <small class="text-muted">demo</small>
+                    <span class="badge badge-rows text-white">24</span>
+                </div>
+            </div>
+        </div>
+        <div class="card table-card mb-2 shadow-sm"
+             onclick="selectTable('data_demo_Liquidez', this)"
+             data-table="data_demo_Liquidez">
+            <div class="card-body py-2 px-3">
+                <div class="fw-semibold small text-truncate" title="Liquidez">Liquidez</div>
+                <div class="d-flex justify-content-between align-items-center mt-1">
+                    <small class="text-muted">demo</small>
+                    <span class="badge badge-rows text-white">24</span>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Área principal -->
+        <div class="col-lg-9">
+            <div id="dashboard-content" style="display:none">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 id="dash-title" class="mb-0"></h5>
+                    <div class="d-flex gap-2">
+                        <select id="chart-type" class="form-select form-select-sm w-auto" onchange="updateChart()">
+                            <option value="line">Línea</option>
+                            <option value="bar">Barras</option>
+                            <option value="area">Área</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportCSV()">
+                            <i class="bi bi-download me-1"></i>CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Eje X (categoría)</label>
+                        <select id="x-col" class="form-select form-select-sm" onchange="updateChart()"></select>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label small fw-semibold">Series (columnas numéricas)</label>
+                        <div id="y-cols" class="d-flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="main-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center py-2">
+                        <span class="fw-semibold small">Datos (<span id="row-count">0</span> registros)</span>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="prevPage()">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                            <span id="page-info" class="small align-self-center"></span>
+                            <button class="btn btn-sm btn-outline-primary" onclick="nextPage()">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-dark" id="data-thead"></thead>
+                                <tbody id="data-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="placeholder" class="text-center py-5 text-muted">
+                <i class="bi bi-mouse2 fs-1 d-block mb-3"></i>
+                Seleccione un conjunto de datos de la lista
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="py-3 mt-4">
+    <div class="container-fluid text-center">
+        Dashboard BCE · Excel-to-Dashboard Agent · GitHub Pages · Chart.js
+    </div>
+</footer>
+
+<script>
+// ─── Datos embebidos (generados por export_to_html.py) ──────────
+const ALL_TABLES = [{"tableName": "data_demo_IndicesFinancieros", "sourceName": "demo", "fileName": "demo_data.xlsx", "sheetName": "IndicesFinancieros", "rowCount": 24, "colCount": 7, "numericCols": ["indice_credito", "indice_depositos", "tasa_activa", "tasa_pasiva"], "textCols": ["periodo"], "rows": [{"periodo": "2020T1", "indice_credito": 102.01, "indice_depositos": 102.48, "tasa_activa": 8.6, "tasa_pasiva": 3.44}, {"periodo": "2020T2", "indice_credito": 104.49, "indice_depositos": 104.12, "tasa_activa": 8.72, "tasa_pasiva": 3.49}, {"periodo": "2020T3", "indice_credito": 106.71, "indice_depositos": 106.96, "tasa_activa": 8.96, "tasa_pasiva": 3.58}, {"periodo": "2020T4", "indice_credito": 109.55, "indice_depositos": 108.92, "tasa_activa": 8.98, "tasa_pasiva": 3.59}, {"periodo": "2021T1", "indice_credito": 111.61, "indice_depositos": 112.06, "tasa_activa": 8.95, "tasa_pasiva": 3.58}, {"periodo": "2021T2", "indice_credito": 115.7, "indice_depositos": 115.37, "tasa_activa": 8.78, "tasa_pasiva": 3.51}, {"periodo": "2021T3", "indice_credito": 118.45, "indice_depositos": 118.29, "tasa_activa": 8.96, "tasa_pasiva": 3.58}, {"periodo": "2021T4", "indice_credito": 121.24, "indice_depositos": 119.47, "tasa_activa": 9.13, "tasa_pasiva": 3.65}, {"periodo": "2022T1", "indice_credito": 124.53, "indice_depositos": 122.74, "tasa_activa": 9.39, "tasa_pasiva": 3.76}, {"periodo": "2022T2", "indice_credito": 128.63, "indice_depositos": 123.65, "tasa_activa": 9.51, "tasa_pasiva": 3.81}, {"periodo": "2022T3", "indice_credito": 130.21, "indice_depositos": 124.78, "tasa_activa": 9.48, "tasa_pasiva": 3.79}, {"periodo": "2022T4", "indice_credito": 131.84, "indice_depositos": 126.96, "tasa_activa": 9.55, "tasa_pasiva": 3.82}, {"periodo": "2023T1", "indice_credito": 135.62, "indice_depositos": 128.08, "tasa_activa": 9.66, "tasa_pasiva": 3.87}, {"periodo": "2023T2", "indice_credito": 138.56, "indice_depositos": 128.88, "tasa_activa": 9.86, "tasa_pasiva": 3.94}, {"periodo": "2023T3", "indice_credito": 142.1, "indice_depositos": 129.55, "tasa_activa": 9.81, "tasa_pasiva": 3.92}, {"periodo": "2023T4", "indice_credito": 145.53, "indice_depositos": 130.21, "tasa_activa": 9.74, "tasa_pasiva": 3.9}, {"periodo": "2024T1", "indice_credito": 149.7, "indice_depositos": 133.94, "tasa_activa": 10.03, "tasa_pasiva": 4.01}, {"periodo": "2024T2", "indice_credito": 153.56, "indice_depositos": 137.28, "tasa_activa": 10.02, "tasa_pasiva": 4.01}, {"periodo": "2024T3", "indice_credito": 159.13, "indice_depositos": 140.04, "tasa_activa": 10.05, "tasa_pasiva": 4.02}, {"periodo": "2024T4", "indice_credito": 162.46, "indice_depositos": 142.34, "tasa_activa": 10.2, "tasa_pasiva": 4.08}, {"periodo": "2025T1", "indice_credito": 168.93, "indice_depositos": 144.01, "tasa_activa": 10.02, "tasa_pasiva": 4.01}, {"periodo": "2025T2", "indice_credito": 172.96, "indice_depositos": 147.57, "tasa_activa": 10.06, "tasa_pasiva": 4.02}, {"periodo": "2025T3", "indice_credito": 176.68, "indice_depositos": 150.51, "tasa_activa": 10.33, "tasa_pasiva": 4.13}, {"periodo": "2025T4", "indice_credito": 182.24, "indice_depositos": 152.68, "tasa_activa": 10.18, "tasa_pasiva": 4.07}]}, {"tableName": "data_demo_Liquidez", "sourceName": "demo", "fileName": "demo_data.xlsx", "sheetName": "Liquidez", "rowCount": 24, "colCount": 4, "numericCols": ["liquidez_total_miles_usd", "reservas_miles_usd"], "textCols": ["periodo"], "rows": [{"periodo": "2020T1", "liquidez_total_miles_usd": 2516870.75, "reservas_miles_usd": 377530.61}, {"periodo": "2020T2", "liquidez_total_miles_usd": 2527766.83, "reservas_miles_usd": 379165.02}, {"periodo": "2020T3", "liquidez_total_miles_usd": 2601461.82, "reservas_miles_usd": 390219.27}, {"periodo": "2020T4", "liquidez_total_miles_usd": 2668233.56, "reservas_miles_usd": 400235.03}, {"periodo": "2021T1", "liquidez_total_miles_usd": 2647439.81, "reservas_miles_usd": 397115.97}, {"periodo": "2021T2", "liquidez_total_miles_usd": 2676330.05, "reservas_miles_usd": 401449.51}, {"periodo": "2021T3", "liquidez_total_miles_usd": 2771823.89, "reservas_miles_usd": 415773.58}, {"periodo": "2021T4", "liquidez_total_miles_usd": 2882260.45, "reservas_miles_usd": 432339.07}, {"periodo": "2022T1", "liquidez_total_miles_usd": 2876792.12, "reservas_miles_usd": 431518.82}, {"periodo": "2022T2", "liquidez_total_miles_usd": 2860800.29, "reservas_miles_usd": 429120.04}, {"periodo": "2022T3", "liquidez_total_miles_usd": 2924764.48, "reservas_miles_usd": 438714.67}, {"periodo": "2022T4", "liquidez_total_miles_usd": 3055763.03, "reservas_miles_usd": 458364.46}, {"periodo": "2023T1", "liquidez_total_miles_usd": 3108177.88, "reservas_miles_usd": 466226.68}, {"periodo": "2023T2", "liquidez_total_miles_usd": 3222515.66, "reservas_miles_usd": 483377.35}, {"periodo": "2023T3", "liquidez_total_miles_usd": 3170346.74, "reservas_miles_usd": 475552.01}, {"periodo": "2023T4", "liquidez_total_miles_usd": 3217367.62, "reservas_miles_usd": 482605.14}, {"periodo": "2024T1", "liquidez_total_miles_usd": 3202024.02, "reservas_miles_usd": 480303.6}, {"periodo": "2024T2", "liquidez_total_miles_usd": 3360247.94, "reservas_miles_usd": 504037.19}, {"periodo": "2024T3", "liquidez_total_miles_usd": 3295075.51, "reservas_miles_usd": 494261.33}, {"periodo": "2024T4", "liquidez_total_miles_usd": 3335951.36, "reservas_miles_usd": 500392.7}, {"periodo": "2025T1", "liquidez_total_miles_usd": 3419915.2, "reservas_miles_usd": 512987.28}, {"periodo": "2025T2", "liquidez_total_miles_usd": 3374738.07, "reservas_miles_usd": 506210.71}, {"periodo": "2025T3", "liquidez_total_miles_usd": 3335380.04, "reservas_miles_usd": 500307.01}, {"periodo": "2025T4", "liquidez_total_miles_usd": 3462787.72, "reservas_miles_usd": 519418.16}]}];
+
+// ─── Estado ─────────────────────────────────────────────────────
+const PAGE_SIZE    = 50;
+let currentTable   = null;
+let currentPage    = 0;
+let chartInstance  = null;
+let selectedSeries = new Set();
+
+const PALETTE = [
+    '#003366','#F5A800','#2196F3','#4CAF50','#E91E63',
+    '#9C27B0','#FF5722','#009688','#607D8B','#795548',
+];
+
+// ─── Seleccionar tabla ───────────────────────────────────────────
+function selectTable(tableName, el) {
+    document.querySelectorAll('.table-card').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    currentTable = ALL_TABLES.find(t => t.tableName === tableName);
+    currentPage  = 0;
+    document.getElementById('placeholder').style.display       = 'none';
+    document.getElementById('dashboard-content').style.display = 'block';
+    document.getElementById('dash-title').textContent =
+        tableName.replace(/^data_/, '').replace(/_/g, ' ');
+    document.getElementById('row-count').textContent = currentTable.rowCount.toLocaleString();
+    buildAxisSelectors();
+    renderPage();
+    updateChart();
+    updatePageInfo();
+}
+
+// ─── Selectores de ejes ──────────────────────────────────────────
+function buildAxisSelectors() {
+    const xSel = document.getElementById('x-col');
+    xSel.innerHTML = '';
+    [...currentTable.textCols, ...currentTable.numericCols].forEach(col => {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = col;
+        xSel.appendChild(opt);
+    });
+    if (currentTable.textCols.length) xSel.value = currentTable.textCols[0];
+
+    const yDiv = document.getElementById('y-cols');
+    yDiv.innerHTML = '';
+    selectedSeries = new Set(currentTable.numericCols.slice(0, 4));
+    currentTable.numericCols.forEach((col, i) => {
+        const color = PALETTE[i % PALETTE.length];
+        const lbl   = document.createElement('label');
+        lbl.className = 'form-check-label small d-flex align-items-center gap-1 border rounded px-2 py-1';
+        lbl.style.cursor = 'pointer';
+        lbl.innerHTML = `<input class="form-check-input m-0" type="checkbox"
+            ${selectedSeries.has(col) ? 'checked' : ''}
+            onchange="toggleSeries('${col}', this.checked)">
+            <span style="color:${color};font-weight:600">${col}</span>`;
+        yDiv.appendChild(lbl);
+    });
+}
+
+function toggleSeries(col, checked) {
+    if (checked) selectedSeries.add(col); else selectedSeries.delete(col);
+    updateChart();
+}
+
+// ─── Gráfico ─────────────────────────────────────────────────────
+function updateChart() {
+    if (!currentTable) return;
+    const xCol = document.getElementById('x-col').value;
+    const ct   = document.getElementById('chart-type').value;
+    const type = ct === 'area' ? 'line' : ct;
+    const rows = currentTable.rows;
+    const labels = rows.map(r => r[xCol] ?? '');
+    const datasets = [];
+    currentTable.numericCols.forEach((col, i) => {
+        if (!selectedSeries.has(col)) return;
+        const color = PALETTE[i % PALETTE.length];
+        datasets.push({
+            label: col, data: rows.map(r => r[col] ?? null),
+            borderColor: color,
+            backgroundColor: ct==='area' ? color+'33' : ct==='bar' ? color+'bb' : color,
+            borderWidth: 2, fill: ct==='area', tension: 0.3,
+            pointRadius: rows.length > 60 ? 0 : 3,
+        });
+    });
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(document.getElementById('main-chart').getContext('2d'), {
+        type, data: { labels, datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+                legend: { position: 'top', labels: { boxWidth: 12 } },
+                tooltip: { callbacks: { label: ctx =>
+                    ` ${ctx.dataset.label}: ${Number(ctx.parsed.y).toLocaleString('es-EC',{minimumFractionDigits:2,maximumFractionDigits:2})}` } }
+            },
+            scales: {
+                x: { ticks: { maxTicksLimit: 20, maxRotation: 45 } },
+                y: { ticks: { callback: v => Number(v).toLocaleString('es-EC') } }
+            }
+        }
+    });
+}
+
+// ─── Tabla paginada ──────────────────────────────────────────────
+function renderPage() {
+    const cols = Object.keys(currentTable.rows[0] || {});
+    document.getElementById('data-thead').innerHTML =
+        '<tr>' + cols.map(c => `<th class="small">${c}</th>`).join('') + '</tr>';
+    const start = currentPage * PAGE_SIZE;
+    const page  = currentTable.rows.slice(start, start + PAGE_SIZE);
+    const tbody = document.getElementById('data-tbody');
+    tbody.innerHTML = '';
+    page.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = cols.map(c => {
+            const v = row[c]; const isNum = typeof v === 'number';
+            return `<td class="small ${isNum ? 'text-end' : ''}">${
+                isNum ? Number(v).toLocaleString('es-EC',{minimumFractionDigits:2,maximumFractionDigits:2}) : (v ?? '')
+            }</td>`;
+        }).join('');
+        tbody.appendChild(tr);
+    });
+}
+
+function prevPage() {
+    if (currentPage <= 0) return;
+    currentPage--; renderPage(); updatePageInfo();
+}
+function nextPage() {
+    if ((currentPage + 1) * PAGE_SIZE >= currentTable.rows.length) return;
+    currentPage++; renderPage(); updatePageInfo();
+}
+function updatePageInfo() {
+    const from = currentPage * PAGE_SIZE + 1;
+    const to   = Math.min(from + PAGE_SIZE - 1, currentTable.rows.length);
+    document.getElementById('page-info').textContent =
+        `${from}–${to} de ${currentTable.rows.length.toLocaleString()}`;
+}
+
+// ─── Exportar CSV ────────────────────────────────────────────────
+function exportCSV() {
+    if (!currentTable) return;
+    const rows = currentTable.rows;
+    const cols = Object.keys(rows[0] || {});
+    const lines = [cols.join(',')];
+    rows.forEach(row => lines.push(cols.map(c => {
+        const v = row[c] ?? '';
+        return String(v).includes(',') ? `"${v}"` : v;
+    }).join(',')));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], {type:'text/csv;charset=utf-8;'}));
+    a.download = currentTable.tableName + '.csv'; a.click();
+}
+
+// ─── Autocargar primera tabla ────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    const first = document.querySelector('.table-card');
+    if (first) first.click();
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
