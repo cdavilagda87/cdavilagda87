@@ -1,0 +1,35 @@
+# netlify.toml
+# ============
+# Configuración para desplegar el Dashboard BCE en Netlify.
+#
+# Para activar el link público (1 sola vez):
+#  1. Ve a https://app.netlify.com
+#  2. "Add new site" → "Import an existing project" → GitHub
+#  3. Selecciona el repositorio cdavilagda87/cdavilagda87
+#  4. Netlify lee este archivo automáticamente → ¡listo!
+#
+# Tu URL pública quedará:  https://<nombre>.netlify.app
+
+[build]
+  command     = "pip install -r requirements.txt && python agent.py --demo && python export_to_html.py"
+  publish     = "docs"
+
+[build.environment]
+  PYTHON_VERSION = "3.11"
+
+# Caché de pip entre builds para acelerar deploys
+[[plugins]]
+  package = "@netlify/plugin-caching"
+
+# Cabeceras de seguridad para el HTML estático
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
