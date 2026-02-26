@@ -305,6 +305,36 @@ def create_demo_data(db_path: Path) -> None:
 # ─────────────────────────────────────────────
 #  Agente principal
 # ─────────────────────────────────────────────
+def process_local_files(paths: list[Path]) -> bool:
+    """Procesa archivos ZIP/Excel locales directamente (sin descargar)."""
+    logger.info("=" * 60)
+    logger.info("Excel-to-Dashboard Agent — Modo archivos locales")
+    logger.info("=" * 60)
+    total_tables = 0
+
+    for i, path in enumerate(paths, 1):
+        if not path.exists():
+            logger.warning("[%d/%d] No encontrado: %s", i, len(paths), path)
+            continue
+
+        source = f"bce_{i:03d}_{sanitize(path.stem)}"[:40]
+        logger.info("[%d/%d] Procesando: %s", i, len(paths), path.name)
+
+        if path.suffix.lower() == ".zip":
+            extract_dir = DOWNLOAD_DIR / f"ex_local_{i:03d}"
+            excel_files = extract_excel_from_zip(path, extract_dir)
+        else:
+            excel_files = [path]
+
+        for xls in excel_files:
+            if xls.exists():
+                total_tables += excel_to_sqlite(xls, DB_PATH, source)
+
+    logger.info("=" * 60)
+    logger.info("¡Completado! %d tablas creadas en %s", total_tables, DB_PATH)
+    return True
+
+
 def run_agent(url: str = BASE_URL, max_files: int | None = None, demo: bool = False) -> bool:
     logger.info("=" * 60)
     logger.info("Excel-to-Dashboard Agent")
@@ -378,14 +408,44 @@ def run_agent(url: str = BASE_URL, max_files: int | None = None, demo: bool = Fa
 # ─────────────────────────────────────────────
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Descarga Excel del BCE y lo convierte en base de datos SQLite."
+        description="Descarga Excel del BCE y lo convierte en base de datos SQLite.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Ejemplos:
+  python agent.py                          # descarga real desde el BCE
+  python agent.py --max-files 3            # solo los primeros 3 archivos
+  python agent.py --demo                   # datos de prueba (sin internet)
+  python agent.py --file datos.zip         # procesa un ZIP local
+  python agent.py --dir ./mis_excels/      # procesa todos los ZIP/Excel en carpeta
+  python agent.py --url https://otro.com   # URL personalizada
+        """,
     )
     parser.add_argument("--url", default=BASE_URL, help="URL de la página fuente")
     parser.add_argument("--max-files", type=int, default=None, metavar="N",
-                        help="Máximo de archivos a procesar")
+                        help="Máximo de archivos a procesar (modo URL)")
     parser.add_argument("--demo", action="store_true",
                         help="Genera datos de demostración (sin descarga real)")
+    parser.add_argument("--file", metavar="RUTA",
+                        help="Procesa un archivo ZIP o Excel local directamente")
+    parser.add_argument("--dir", metavar="CARPETA",
+                        help="Procesa todos los ZIP/Excel en una carpeta local")
     args = parser.parse_args()
 
-    success = run_agent(url=args.url, max_files=args.max_files, demo=args.demo)
+    if args.file:
+        success = process_local_files([Path(args.file)])
+    elif args.dir:
+        folder = Path(args.dir)
+        files  = sorted(
+            list(folder.glob("*.zip")) +
+            list(folder.glob("*.xls")) +
+            list(folder.glob("*.xlsx"))
+        )
+        if not files:
+            logger.error("No se encontraron ZIP/Excel en: %s", folder)
+            sys.exit(1)
+        logger.info("Archivos encontrados en '%s': %d", folder, len(files))
+        success = process_local_files(files)
+    else:
+        success = run_agent(url=args.url, max_files=args.max_files, demo=args.demo)
+
     sys.exit(0 if success else 1)
