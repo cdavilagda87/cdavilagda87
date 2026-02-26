@@ -1,2 +1,18 @@
 __pycache__/
 *.py[cod]
+
+# Descargas y DB generados por el agente
+downloads/*
+!downloads/.gitkeep
+database/*.db
+
+# Java
+dashboard-java/target/
+dashboard-java/.mvn/
+*.jar
+*.class
+
+# IDEs
+.idea/
+.vscode/
+*.iml
