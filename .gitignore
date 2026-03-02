@@ -5,6 +5,7 @@ __pycache__/
 downloads/*
 !downloads/.gitkeep
 database/*.db
+!database/.gitkeep
 
 # Java
 dashboard-java/target/
