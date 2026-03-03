@@ -17,3 +17,7 @@ dashboard-java/.mvn/
 .idea/
 .vscode/
 *.iml
+
+# Claude Code — no versionar
+.claude/projects/
+CLAUDE.local.md
