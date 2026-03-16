@@ -563,7 +563,7 @@ def render_intervencion1(df: pd.DataFrame, df_anual: pd.DataFrame):
         val, unit = fmt_pct_directa(ultimo_val)
         dt, dt_cls = _delta_str(ultimo_val, penultimo_val, fmt_pct_directa)
 
-        c1, c2, c3 = st.columns([1, 2, 1])
+        c1, _ = st.columns([1, 3])
         with c1:
             st.markdown(
                 kpi_card(f"SPI / PIB ({df_anual['año'].iloc[-1]})",
@@ -571,11 +571,11 @@ def render_intervencion1(df: pd.DataFrame, df_anual: pd.DataFrame):
                 unsafe_allow_html=True,
             )
 
-        with c2:
-            fig = bar_fig(df_anual, "año", ["SPI / PIB"],
-                          "Índice SPI como porcentaje del PIB")
-            fig.update_yaxes(title_text="%", ticksuffix="%")
-            st.plotly_chart(fig, use_container_width=True)
+        fig = bar_fig(df_anual, "año", ["SPI / PIB"],
+                      "Índice SPI como porcentaje del PIB — 2010 a 2024")
+        fig.update_yaxes(title_text="%", ticksuffix="%")
+        fig.update_xaxes(tickmode="array", tickvals=df_anual["año"].tolist())
+        st.plotly_chart(fig, use_container_width=True)
 
         with st.expander("Ver datos SPI / PIB"):
             st.dataframe(df_anual, use_container_width=True)
