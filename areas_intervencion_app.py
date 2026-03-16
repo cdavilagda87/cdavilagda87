@@ -503,6 +503,18 @@ def _label(col: str) -> str:
     return parts[-1][:50] if len(parts) > 1 else col[:50]
 
 
+def _render_kpis(items: list[tuple], color: str):
+    """Renderiza una lista de (label, value, unit, delta, delta_cls) en filas de 4."""
+    for row_start in range(0, len(items), 4):
+        chunk = items[row_start:row_start + 4]
+        cols = st.columns(len(chunk))
+        for i, (lbl, val, unit, dt, dt_cls) in enumerate(chunk):
+            with cols[i]:
+                st.markdown(kpi_card(lbl, val, unit, dt, dt_cls, color),
+                            unsafe_allow_html=True)
+        st.markdown("")
+
+
 def render_intervencion1(df: pd.DataFrame, df_anual: pd.DataFrame):
     st.markdown(
         f'<span class="area-badge" style="background:{AREA_COLORS[0]}">'
@@ -513,48 +525,40 @@ def render_intervencion1(df: pd.DataFrame, df_anual: pd.DataFrame):
     ultimo = df.iloc[-1]
     penultimo = df.iloc[-2] if len(df) > 1 else None
 
-    # ── KPIs trimestrales + SPI/PIB juntos al inicio ─────────────────────────
-    kpi_items = metricas[:4]
-    cols = st.columns(len(kpi_items) + (1 if not df_anual.empty else 0))
-    for i, col in enumerate(kpi_items):
-        with cols[i]:
-            val, unit = fmt_entero(ultimo[col])
-            dt, dt_cls = _delta_str(ultimo[col],
-                                    penultimo[col] if penultimo is not None else None,
-                                    fmt_entero)
-            st.markdown(
-                kpi_card(_label(col), val, unit, dt, dt_cls, AREA_COLORS[0]),
-                unsafe_allow_html=True,
-            )
+    # ── Todos los KPIs al inicio ──────────────────────────────────────────────
+    kpi_items = []
+    for col in metricas:
+        val, unit = fmt_entero(ultimo[col])
+        dt, dt_cls = _delta_str(ultimo[col],
+                                penultimo[col] if penultimo is not None else None,
+                                fmt_entero)
+        kpi_items.append((_label(col), val, unit, dt, dt_cls))
     if not df_anual.empty:
-        with cols[len(kpi_items)]:
-            ultimo_val = df_anual["SPI / PIB"].iloc[-1]
-            penultimo_val = df_anual["SPI / PIB"].iloc[-2] if len(df_anual) > 1 else None
-            val, unit = fmt_pct_directa(ultimo_val)
-            dt, dt_cls = _delta_str(ultimo_val, penultimo_val, fmt_pct_directa)
-            st.markdown(
-                kpi_card(f"SPI / PIB ({df_anual['año'].iloc[-1]})",
-                         val, unit, dt, dt_cls, AREA_COLORS[0]),
-                unsafe_allow_html=True,
-            )
+        ult = df_anual["SPI / PIB"].iloc[-1]
+        pen = df_anual["SPI / PIB"].iloc[-2] if len(df_anual) > 1 else None
+        val, unit = fmt_pct_directa(ult)
+        dt, dt_cls = _delta_str(ult, pen, fmt_pct_directa)
+        kpi_items.append((f"SPI / PIB ({df_anual['año'].iloc[-1]})", val, unit, dt, dt_cls))
 
+    _render_kpis(kpi_items, AREA_COLORS[0])
     st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
 
-    # ── Gráfico trimestral ────────────────────────────────────────────────────
-    st.markdown('<div class="section-title">Evolución trimestral</div>',
+    # ── Selector dinámico ────────────────────────────────────────────────────
+    st.markdown('<div class="section-title">Selección de indicadores</div>',
                 unsafe_allow_html=True)
     sel = st.multiselect(
-        "Métricas a visualizar",
-        metricas, default=metricas[:4],
+        "Indicadores a visualizar en el gráfico",
+        metricas, default=metricas,
         key="int1_metricas",
         format_func=_label,
     )
+
+    # ── Gráfico trimestral ────────────────────────────────────────────────────
     if sel:
-        labels = {c: _label(c) for c in sel}
         fig = line_fig(
             df, "periodo", sel,
             f"Puntos de Atención — {df['periodo'].iloc[0]} a {df['periodo'].iloc[-1]}",
-            labels=labels,
+            labels={c: _label(c) for c in sel},
             color=AREA_COLORS[0] if len(sel) == 1 else None,
         )
         fig.update_yaxes(title_text="Unidades")
@@ -589,36 +593,31 @@ def render_intervencion2(df: pd.DataFrame):
     ultimo = df.iloc[-1]
     penultimo = df.iloc[-2] if len(df) > 1 else None
 
-    # KPIs: proporciones → porcentaje
-    cols = st.columns(min(3, len(metricas)))
-    for i, col in enumerate(metricas[:3]):
-        with cols[i]:
-            val, unit = fmt_pct_proporcion(ultimo[col])
-            dt, dt_cls = _delta_str(ultimo[col],
-                                    penultimo[col] if penultimo is not None else None,
-                                    fmt_pct_proporcion)
-            st.markdown(
-                kpi_card(col[:45], val, unit, dt, dt_cls, AREA_COLORS[1]),
-                unsafe_allow_html=True,
-            )
+    # ── Todos los KPIs al inicio ──────────────────────────────────────────────
+    kpi_items = []
+    for col in metricas:
+        val, unit = fmt_pct_proporcion(ultimo[col])
+        dt, dt_cls = _delta_str(ultimo[col],
+                                penultimo[col] if penultimo is not None else None,
+                                fmt_pct_proporcion)
+        kpi_items.append((col[:45], val, unit, dt, dt_cls))
+    _render_kpis(kpi_items, AREA_COLORS[1])
 
     st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="section-title">Evolución por año de encuesta — Global Findex</div>',
-        unsafe_allow_html=True,
-    )
 
+    # ── Selector dinámico ─────────────────────────────────────────────────────
+    st.markdown('<div class="section-title">Selección de indicadores</div>',
+                unsafe_allow_html=True)
     sel = st.multiselect(
-        "Indicadores",
+        "Indicadores a visualizar en el gráfico",
         metricas, default=metricas,
         key="int2_metricas",
         format_func=lambda c: c[:60],
     )
     if sel:
-        labels = {c: c[:50] for c in sel}
         fig = bar_fig(df, "año", sel,
                       "Indicadores de Acceso Financiero (Global Findex)",
-                      labels=labels, pct_axis=True)
+                      labels={c: c[:50] for c in sel}, pct_axis=True)
         st.plotly_chart(fig, use_container_width=True)
 
     with st.expander("Ver datos tabulares"):
@@ -640,24 +639,21 @@ def render_intervencion3(df: pd.DataFrame):
     ultimo = df.iloc[-1]
     penultimo = df.iloc[-2] if len(df) > 1 else None
 
-    # KPIs: detecta si es millones USD o porcentaje
-    kpi_cols = st.columns(min(len(metricas), 5))
-    for i, col in enumerate(metricas):
-        with kpi_cols[i]:
-            fn = _fmt_for_col3(col)
-            val, unit = fn(ultimo[col])
-            dt, dt_cls = _delta_str(ultimo[col],
-                                    penultimo[col] if penultimo is not None else None,
-                                    fn)
-            st.markdown(
-                kpi_card(col[:45], val, unit, dt, dt_cls, AREA_COLORS[2]),
-                unsafe_allow_html=True,
-            )
+    # ── Todos los KPIs al inicio ──────────────────────────────────────────────
+    kpi_items = []
+    for col in metricas:
+        fn = _fmt_for_col3(col)
+        val, unit = fn(ultimo[col])
+        dt, dt_cls = _delta_str(ultimo[col],
+                                penultimo[col] if penultimo is not None else None,
+                                fn)
+        kpi_items.append((col[:45], val, unit, dt, dt_cls))
+    _render_kpis(kpi_items, AREA_COLORS[2])
 
     st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
 
-    # ── BLOQUE DE CONTROLES (primero todos los selectores) ───────────────────
-    st.markdown('<div class="section-title">Filtros y selección de series</div>',
+    # ── Selectores dinámicos ──────────────────────────────────────────────────
+    st.markdown('<div class="section-title">Selección de indicadores y período</div>',
                 unsafe_allow_html=True)
 
     # Filtro de período
@@ -744,19 +740,27 @@ def render_intervencion4(df: pd.DataFrame):
     ultimo = df.iloc[-1]
     penultimo = df.iloc[-2] if len(df) > 1 else None
 
-    cols = st.columns(min(4, len(metricas)))
-    for i, col in enumerate(metricas[:4]):
-        with cols[i]:
-            val, unit = fmt_entero(ultimo[col])
-            dt, dt_cls = _delta_str(ultimo[col],
-                                    penultimo[col] if penultimo is not None else None,
-                                    fmt_entero)
-            st.markdown(
-                kpi_card(col[:45], val, unit, dt, dt_cls, AREA_COLORS[3]),
-                unsafe_allow_html=True,
-            )
+    # ── Todos los KPIs al inicio ──────────────────────────────────────────────
+    kpi_items = []
+    for col in metricas:
+        val, unit = fmt_entero(ultimo[col])
+        dt, dt_cls = _delta_str(ultimo[col],
+                                penultimo[col] if penultimo is not None else None,
+                                fmt_entero)
+        kpi_items.append((col[:45], val, unit, dt, dt_cls))
+    _render_kpis(kpi_items, AREA_COLORS[3])
 
     st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
+
+    # ── Selector dinámico ─────────────────────────────────────────────────────
+    st.markdown('<div class="section-title">Selección de indicadores y período</div>',
+                unsafe_allow_html=True)
+    sel_metricas4 = st.multiselect(
+        "Indicadores a visualizar en el gráfico",
+        metricas, default=metricas,
+        key="int4_metricas",
+        format_func=lambda c: c[:65],
+    )
 
     min_f, max_f = df["fecha"].min(), df["fecha"].max()
     st.markdown(
@@ -789,9 +793,9 @@ def render_intervencion4(df: pd.DataFrame):
         (df["fecha"] >= pd.Timestamp(desde)) & (df["fecha"] <= pd.Timestamp(hasta))
     ]
 
-    if not df_f.empty:
+    if not df_f.empty and sel_metricas4:
         fig = go.Figure()
-        for i, col in enumerate(metricas):
+        for i, col in enumerate(sel_metricas4):
             fig.add_trace(go.Bar(
                 x=df_f["fecha"], y=df_f[col],
                 name=col[:50],
