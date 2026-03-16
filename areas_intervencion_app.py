@@ -464,17 +464,24 @@ def dual_axis_fig(df: pd.DataFrame, x: str,
     return fig
 
 
+def _hex_to_rgba(hex_color: str, alpha: float = 0.18) -> str:
+    h = hex_color.lstrip("#")
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
+
+
 def area_fig(df: pd.DataFrame, x: str, y_cols: list[str],
              title: str, color: str) -> go.Figure:
     fig = go.Figure()
     for i, col in enumerate(y_cols):
         clr = color if len(y_cols) == 1 else PALETTE[i % len(PALETTE)]
         y = pd.to_numeric(df[col], errors="coerce")
+        fill_clr = _hex_to_rgba(clr) if clr.startswith("#") else clr
         fig.add_trace(go.Scatter(
             x=df[x], y=y, mode="lines", name=col[:50],
             line=dict(color=clr, width=2),
             fill="tozeroy",
-            fillcolor=clr.replace("#", "rgba(").rstrip(")") if clr.startswith("#") else clr,
+            fillcolor=fill_clr,
             hovertemplate=f"<b>{col[:45]}</b><br>%{{x}}: %{{y:,.0f}} casos<extra></extra>",
         ))
     fig.update_layout(
@@ -1006,8 +1013,6 @@ def render_intervencion4(df: pd.DataFrame, opts: dict):
         fig2 = area_fig(df_area, "fecha", ["total"],
                         "Evolución mensual total de casos",
                         color=AREA_COLORS[3])
-        # Ajuste de color de fill con opacidad
-        fig2.data[0].fillcolor = "rgba(0,40,85,0.15)"
         st.plotly_chart(fig2, use_container_width=True)
 
     with st.expander("Ver datos tabulares"):
