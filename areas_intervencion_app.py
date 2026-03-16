@@ -427,6 +427,21 @@ def load_intervencion1() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=600, show_spinner=False)
+def load_intervencion1_anual() -> pd.DataFrame:
+    """SPI/PIB — anual."""
+    wb = openpyxl.load_workbook(EXCEL_PATH, data_only=True, read_only=True)
+    ws = wb["Intervención 1 - Anual"]
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+
+    data = [r for r in rows[2:] if r[0] is not None]
+    df = pd.DataFrame(data, columns=["año", "SPI / PIB"])
+    df["año"] = df["año"].apply(lambda x: str(int(float(x))) if x is not None else None)
+    df["SPI / PIB"] = pd.to_numeric(df["SPI / PIB"], errors="coerce")
+    return df.dropna(subset=["año"]).sort_values("año").reset_index(drop=True)
+
+
+@st.cache_data(ttl=600, show_spinner=False)
 def load_intervencion2() -> pd.DataFrame:
     """Oferta de servicios — anual (Global Findex), valores proporción 0-1."""
     wb = openpyxl.load_workbook(EXCEL_PATH, data_only=True, read_only=True)
@@ -488,7 +503,7 @@ def _label(col: str) -> str:
     return parts[-1][:50] if len(parts) > 1 else col[:50]
 
 
-def render_intervencion1(df: pd.DataFrame):
+def render_intervencion1(df: pd.DataFrame, df_anual: pd.DataFrame):
     st.markdown(
         f'<span class="area-badge" style="background:{AREA_COLORS[0]}">'
         f'{AREA_LABELS[0]}</span>',
@@ -536,6 +551,34 @@ def render_intervencion1(df: pd.DataFrame):
 
     with st.expander("Ver datos tabulares"):
         st.dataframe(df, use_container_width=True)
+
+    # ── SPI / PIB anual ──────────────────────────────────────────────────────
+    if not df_anual.empty:
+        st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">SPI / PIB — Anual</div>',
+                    unsafe_allow_html=True)
+
+        ultimo_val = df_anual["SPI / PIB"].iloc[-1]
+        penultimo_val = df_anual["SPI / PIB"].iloc[-2] if len(df_anual) > 1 else None
+        val, unit = fmt_pct_directa(ultimo_val)
+        dt, dt_cls = _delta_str(ultimo_val, penultimo_val, fmt_pct_directa)
+
+        c1, c2, c3 = st.columns([1, 2, 1])
+        with c1:
+            st.markdown(
+                kpi_card(f"SPI / PIB ({df_anual['año'].iloc[-1]})",
+                         val, unit, dt, dt_cls, AREA_COLORS[0]),
+                unsafe_allow_html=True,
+            )
+
+        with c2:
+            fig = bar_fig(df_anual, "año", ["SPI / PIB"],
+                          "Índice SPI como porcentaje del PIB")
+            fig.update_yaxes(title_text="%", ticksuffix="%")
+            st.plotly_chart(fig, use_container_width=True)
+
+        with st.expander("Ver datos SPI / PIB"):
+            st.dataframe(df_anual, use_container_width=True)
 
 
 def render_intervencion2(df: pd.DataFrame):
@@ -890,6 +933,7 @@ def main():
 
     with st.spinner("Cargando datos..."):
         d1 = load_intervencion1()
+        d1_anual = load_intervencion1_anual()
         d2 = load_intervencion2()
         d3 = load_intervencion3()
         d4 = load_intervencion4()
@@ -906,7 +950,7 @@ def main():
         render_overview(d1, d2, d3, d4)
 
     with tabs[1]:
-        render_intervencion1(d1)
+        render_intervencion1(d1, d1_anual)
 
     with tabs[2]:
         render_intervencion2(d2)
