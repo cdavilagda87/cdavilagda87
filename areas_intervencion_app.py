@@ -513,9 +513,10 @@ def render_intervencion1(df: pd.DataFrame, df_anual: pd.DataFrame):
     ultimo = df.iloc[-1]
     penultimo = df.iloc[-2] if len(df) > 1 else None
 
-    # KPIs: conteos enteros sin abreviatura
-    cols = st.columns(min(4, len(metricas)))
-    for i, col in enumerate(metricas[:4]):
+    # ── KPIs trimestrales + SPI/PIB juntos al inicio ─────────────────────────
+    kpi_items = metricas[:4]
+    cols = st.columns(len(kpi_items) + (1 if not df_anual.empty else 0))
+    for i, col in enumerate(kpi_items):
         with cols[i]:
             val, unit = fmt_entero(ultimo[col])
             dt, dt_cls = _delta_str(ultimo[col],
@@ -525,12 +526,23 @@ def render_intervencion1(df: pd.DataFrame, df_anual: pd.DataFrame):
                 kpi_card(_label(col), val, unit, dt, dt_cls, AREA_COLORS[0]),
                 unsafe_allow_html=True,
             )
+    if not df_anual.empty:
+        with cols[len(kpi_items)]:
+            ultimo_val = df_anual["SPI / PIB"].iloc[-1]
+            penultimo_val = df_anual["SPI / PIB"].iloc[-2] if len(df_anual) > 1 else None
+            val, unit = fmt_pct_directa(ultimo_val)
+            dt, dt_cls = _delta_str(ultimo_val, penultimo_val, fmt_pct_directa)
+            st.markdown(
+                kpi_card(f"SPI / PIB ({df_anual['año'].iloc[-1]})",
+                         val, unit, dt, dt_cls, AREA_COLORS[0]),
+                unsafe_allow_html=True,
+            )
 
     st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
 
+    # ── Gráfico trimestral ────────────────────────────────────────────────────
     st.markdown('<div class="section-title">Evolución trimestral</div>',
                 unsafe_allow_html=True)
-
     sel = st.multiselect(
         "Métricas a visualizar",
         metricas, default=metricas[:4],
@@ -552,27 +564,13 @@ def render_intervencion1(df: pd.DataFrame, df_anual: pd.DataFrame):
     with st.expander("Ver datos tabulares"):
         st.dataframe(df, use_container_width=True)
 
-    # ── SPI / PIB anual ──────────────────────────────────────────────────────
+    # ── Gráfico SPI/PIB anual ─────────────────────────────────────────────────
     if not df_anual.empty:
         st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
         st.markdown('<div class="section-title">SPI / PIB — Anual</div>',
                     unsafe_allow_html=True)
-
-        ultimo_val = df_anual["SPI / PIB"].iloc[-1]
-        penultimo_val = df_anual["SPI / PIB"].iloc[-2] if len(df_anual) > 1 else None
-        val, unit = fmt_pct_directa(ultimo_val)
-        dt, dt_cls = _delta_str(ultimo_val, penultimo_val, fmt_pct_directa)
-
-        c1, _ = st.columns([1, 3])
-        with c1:
-            st.markdown(
-                kpi_card(f"SPI / PIB ({df_anual['año'].iloc[-1]})",
-                         val, unit, dt, dt_cls, AREA_COLORS[0]),
-                unsafe_allow_html=True,
-            )
-
         fig = bar_fig(df_anual, "año", ["SPI / PIB"],
-                      "Índice SPI como porcentaje del PIB — 2010 a 2024")
+                      f"Índice SPI como porcentaje del PIB — {df_anual['año'].iloc[0]} a {df_anual['año'].iloc[-1]}")
         fig.update_yaxes(title_text="%", ticksuffix="%")
         fig.update_xaxes(tickmode="array", tickvals=df_anual["año"].tolist())
         st.plotly_chart(fig, use_container_width=True)
