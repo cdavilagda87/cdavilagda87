@@ -127,7 +127,7 @@ def apply_css():
         min-height: 108px;
     }}
     .kpi-label {{
-        font-size: .70rem;
+        font-size: .60rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: .08em;
