@@ -694,7 +694,9 @@ def render_intervencion2(df: pd.DataFrame, df_mdh: pd.DataFrame):
                 ))
             fig1.update_layout(
                 title="Evolución anual — Personas por tipo de transferencia",
-                xaxis=dict(gridcolor="#E8EDF3"),
+                xaxis=dict(gridcolor="#E8EDF3",
+                           tickmode="array",
+                           tickvals=[str(a) for a in sorted(por_año_tipo["periodo"].unique())]),
                 yaxis=dict(gridcolor="#E8EDF3", title="Personas"),
                 legend=dict(orientation="h", y=-0.28, font_size=10),
                 **_CHART_CFG,
