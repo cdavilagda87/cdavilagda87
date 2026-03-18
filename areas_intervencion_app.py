@@ -127,7 +127,7 @@ def apply_css():
         min-height: auto;
     }}
     .kpi-label {{
-        font-size: .64rem;
+        font-size: .72rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: .05em;
@@ -148,9 +148,9 @@ def apply_css():
         color: {C['gold']};
         margin-left: 5px;
     }}
-    .kpi-delta-up   {{ font-size:.76rem; color:{C['green']}; margin-top:5px; }}
-    .kpi-delta-down {{ font-size:.76rem; color:{C['red']};   margin-top:5px; }}
-    .kpi-delta-neu  {{ font-size:.76rem; color:{C['gray']};  margin-top:5px; }}
+    .kpi-delta-up   {{ font-size:.60rem; color:{C['green']}; margin-top:5px; }}
+    .kpi-delta-down {{ font-size:.60rem; color:{C['red']};   margin-top:5px; }}
+    .kpi-delta-neu  {{ font-size:.60rem; color:{C['gray']};  margin-top:5px; }}
 
     /* ── Sección título ── */
     .section-title {{
@@ -348,7 +348,7 @@ def kpi_card(label: str, value: str, unit: str = "",
     return (
         f'<div class="kpi-card" style="border-top-color:{color}">'
         f'<p style="font-size:1.5rem;margin:0 0 4px">{icon_str}</p>'
-        f'<p class="kpi-label" style="margin:0;font-size:.64rem">{label}</p>'
+        f'<p class="kpi-label" style="margin:0;font-size:.72rem">{label}</p>'
         f'{subtitle_html}'
         f'<p class="kpi-value" style="margin:6px 0 0">{value}{unit_html}</p>'
         f'{delta_html}'
@@ -663,7 +663,7 @@ def render_intervencion2(df: pd.DataFrame, df_mdh: pd.DataFrame):
         dt, dt_cls = _delta_str(ultimo[col],
                                 penultimo[col] if penultimo is not None else None,
                                 fmt_pct_proporcion)
-        kpi_items.append((col[:45], val, unit, dt, dt_cls))
+        kpi_items.append((col, val, unit, dt, dt_cls))
     _render_kpis(kpi_items, AREA_COLORS[1])
 
     st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
@@ -799,7 +799,7 @@ def render_intervencion3(df: pd.DataFrame):
         dt, dt_cls = _delta_str(ultimo[col],
                                 penultimo[col] if penultimo is not None else None,
                                 fn)
-        kpi_items.append((col[:45], val, unit, dt, dt_cls))
+        kpi_items.append((col, val, unit, dt, dt_cls))
     _render_kpis(kpi_items, AREA_COLORS[2])
 
     st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
@@ -899,7 +899,7 @@ def render_intervencion4(df: pd.DataFrame):
         dt, dt_cls = _delta_str(ultimo[col],
                                 penultimo[col] if penultimo is not None else None,
                                 fmt_entero)
-        kpi_items.append((col[:45], val, unit, dt, dt_cls))
+        kpi_items.append((col, val, unit, dt, dt_cls))
     _render_kpis(kpi_items, AREA_COLORS[3])
 
     st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
