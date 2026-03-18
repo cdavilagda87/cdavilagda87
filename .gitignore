@@ -5,6 +5,7 @@ __pycache__/
 downloads/*
 !downloads/.gitkeep
 database/*.db
+!database/.gitkeep
 
 # Java
 dashboard-java/target/
@@ -16,3 +17,7 @@ dashboard-java/.mvn/
 .idea/
 .vscode/
 *.iml
+
+# Claude Code — no versionar
+.claude/projects/
+CLAUDE.local.md
