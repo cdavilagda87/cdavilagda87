@@ -148,9 +148,9 @@ def apply_css():
         color: {C['gold']};
         margin-left: 5px;
     }}
-    .kpi-delta-up   {{ font-size:.50rem; color:{C['green']}; margin-top:5px; }}
-    .kpi-delta-down {{ font-size:.50rem; color:{C['red']};   margin-top:5px; }}
-    .kpi-delta-neu  {{ font-size:.50rem; color:{C['gray']};  margin-top:5px; }}
+    .kpi-delta-up   {{ font-size:.56rem; color:{C['green']}; margin-top:5px; }}
+    .kpi-delta-down {{ font-size:.56rem; color:{C['red']};   margin-top:5px; }}
+    .kpi-delta-neu  {{ font-size:.56rem; color:{C['gray']};  margin-top:5px; }}
 
     /* ── Sección título ── */
     .section-title {{
@@ -342,13 +342,15 @@ def kpi_card(label: str, value: str, unit: str = "",
              subtitle: str = "") -> str:
     icon_str = icon or _icon_for(label)
     unit_html = f'<span class="kpi-unit">{unit}</span>' if unit else ""
-    delta_html = f'<p class="{delta_cls}" style="margin:4px 0 0;font-size:.50rem">{delta}</p>' if delta else ""
+    delta_html = f'<p class="{delta_cls}" style="margin:4px 0 0;font-size:.56rem">{delta}</p>' if delta else ""
     subtitle_html = (f'<p style="font-size:.72rem;color:{C["gold"]};font-weight:600;'
                      f'margin:2px 0 0;line-height:1.3">{subtitle}</p>') if subtitle else ""
     return (
         f'<div class="kpi-card" style="border-top-color:{color}">'
-        f'<p style="font-size:1.5rem;margin:0 0 4px">{icon_str}</p>'
-        f'<p class="kpi-label" style="margin:0;font-size:.72rem">{label}</p>'
+        f'<p style="font-size:.72rem;font-weight:700;text-transform:uppercase;'
+        f'letter-spacing:.05em;color:{C["gray"]};margin:0 0 6px;word-break:break-word">'
+        f'<span style="font-size:1.1rem;vertical-align:middle;margin-right:5px">{icon_str}</span>'
+        f'{label}</p>'
         f'{subtitle_html}'
         f'<p class="kpi-value" style="margin:6px 0 0">{value}{unit_html}</p>'
         f'{delta_html}'
