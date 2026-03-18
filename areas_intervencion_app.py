@@ -678,36 +678,40 @@ def render_intervencion2(df: pd.DataFrame, df_mdh: pd.DataFrame):
         df_f = df_mdh[(df_mdh["periodo"] == año_sel) &
                       (df_mdh["tipo_transferencia"].isin(tipo_sel))]
 
-        # Gráfico 1: total por tipo
-        if not df_f.empty:
-            por_tipo = df_f.groupby("tipo_transferencia")["total"].sum().reset_index()
-            fig1 = go.Figure(go.Bar(
-                x=por_tipo["tipo_transferencia"],
-                y=por_tipo["total"],
-                marker_color=[PALETTE[i % len(PALETTE)] for i in range(len(por_tipo))],
-                text=por_tipo["total"].apply(lambda x: f"{int(x):,}"),
-                textposition="outside",
-                hovertemplate="<b>%{x}</b><br>%{y:,.0f} personas<extra></extra>",
-            ))
+        # Gráfico 1: evolución anual por tipo — línea
+        por_año_tipo = df_mdh[df_mdh["tipo_transferencia"].isin(tipo_sel)]\
+            .groupby(["periodo", "tipo_transferencia"])["total"].sum().reset_index()
+        if not por_año_tipo.empty:
+            fig1 = go.Figure()
+            for i, tipo in enumerate(tipo_sel):
+                d = por_año_tipo[por_año_tipo["tipo_transferencia"] == tipo]
+                fig1.add_trace(go.Scatter(
+                    x=d["periodo"].astype(str), y=d["total"],
+                    mode="lines+markers", name=tipo[:45],
+                    line=dict(color=PALETTE[i % len(PALETTE)], width=2.2),
+                    marker=dict(size=7),
+                    hovertemplate=f"<b>{tipo[:40]}</b><br>%{{x}}: %{{y:,.0f}} personas<extra></extra>",
+                ))
             fig1.update_layout(
-                title=f"Personas por tipo de transferencia — {año_sel}",
-                xaxis=dict(gridcolor="#E8EDF3", tickangle=-20),
+                title="Evolución anual — Personas por tipo de transferencia",
+                xaxis=dict(gridcolor="#E8EDF3"),
                 yaxis=dict(gridcolor="#E8EDF3", title="Personas"),
+                legend=dict(orientation="h", y=-0.28, font_size=10),
                 **_CHART_CFG,
             )
             st.plotly_chart(fig1, use_container_width=True)
 
-            # Gráfico 2: distribución por edad
-            por_edad = df_f.groupby("edad")["total"].sum().reset_index()
+        # Gráfico 2: distribución por edad (año seleccionado)
+        if not df_f.empty:
             orden_edad = ['De 18-29','De 30-39','De 40-49','De 50-59','De 60-64',
                           'De 65-74','De 75-84','De 85-99','Mayor o igual a 100']
+            por_edad = df_f.groupby("edad")["total"].sum().reset_index()
             por_edad["_ord"] = por_edad["edad"].apply(
                 lambda x: orden_edad.index(x) if x in orden_edad else 99)
             por_edad = por_edad.sort_values("_ord").drop(columns=["_ord"])
 
             fig2 = go.Figure(go.Bar(
-                x=por_edad["edad"],
-                y=por_edad["total"],
+                x=por_edad["edad"], y=por_edad["total"],
                 marker_color=AREA_COLORS[1],
                 text=por_edad["total"].apply(lambda x: f"{int(x):,}"),
                 textposition="outside",
@@ -720,30 +724,6 @@ def render_intervencion2(df: pd.DataFrame, df_mdh: pd.DataFrame):
                 **_CHART_CFG,
             )
             st.plotly_chart(fig2, use_container_width=True)
-
-            # Gráfico 3: evolución anual por tipo
-            st.markdown('<div class="section-title">Evolución anual por tipo de transferencia</div>',
-                        unsafe_allow_html=True)
-            por_año_tipo = df_mdh[df_mdh["tipo_transferencia"].isin(tipo_sel)]\
-                .groupby(["periodo", "tipo_transferencia"])["total"].sum().reset_index()
-            fig3 = go.Figure()
-            for i, tipo in enumerate(tipo_sel):
-                d = por_año_tipo[por_año_tipo["tipo_transferencia"] == tipo]
-                fig3.add_trace(go.Bar(
-                    x=d["periodo"].astype(str), y=d["total"],
-                    name=tipo[:45],
-                    marker_color=PALETTE[i % len(PALETTE)],
-                    hovertemplate=f"<b>{tipo[:40]}</b><br>%{{x}}: %{{y:,.0f}} personas<extra></extra>",
-                ))
-            fig3.update_layout(
-                title="Evolución anual — Personas por tipo de transferencia",
-                barmode="group",
-                xaxis=dict(gridcolor="#E8EDF3"),
-                yaxis=dict(gridcolor="#E8EDF3", title="Personas"),
-                legend=dict(orientation="h", y=-0.28, font_size=10),
-                **_CHART_CFG,
-            )
-            st.plotly_chart(fig3, use_container_width=True)
 
         with st.expander("Ver datos MDH"):
             st.dataframe(df_mdh, use_container_width=True)
