@@ -124,13 +124,14 @@ def apply_css():
         padding: 16px 18px 12px;
         box-shadow: 0 1px 6px rgba(0,40,85,.10);
         border-top: 4px solid {C['blue']};
-        min-height: 108px;
+        min-height: auto;
     }}
     .kpi-label {{
-        font-size: .52rem;
+        font-size: .64rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: .08em;
+        letter-spacing: .05em;
+        word-break: break-word;
         color: {C['gray']};
         margin-bottom: 8px;
         line-height: 1.3;
@@ -347,7 +348,7 @@ def kpi_card(label: str, value: str, unit: str = "",
     return (
         f'<div class="kpi-card" style="border-top-color:{color}">'
         f'<p style="font-size:1.5rem;margin:0 0 4px">{icon_str}</p>'
-        f'<p class="kpi-label" style="margin:0;font-size:.52rem">{label}</p>'
+        f'<p class="kpi-label" style="margin:0;font-size:.64rem">{label}</p>'
         f'{subtitle_html}'
         f'<p class="kpi-value" style="margin:6px 0 0">{value}{unit_html}</p>'
         f'{delta_html}'
@@ -1004,7 +1005,7 @@ def render_overview(d1, d2, d3, d4):
             freq = ["trimestres", "años encuesta", "meses", "meses"][i]
             nota = f"Último: {periodo} · {n} {freq}"
             st.markdown(
-                kpi_card(AREA_LABELS[i][:35], val, unit, nota, "kpi-delta-neu",
+                kpi_card(AREA_LABELS[i], val, unit, nota, "kpi-delta-neu",
                          AREA_COLORS[i], icon=AREA_ICONS[i],
                          subtitle=_label(metric)),
                 unsafe_allow_html=True,
