@@ -341,21 +341,18 @@ def kpi_card(label: str, value: str, unit: str = "",
              subtitle: str = "") -> str:
     icon_str = icon or _icon_for(label)
     unit_html = f'<span class="kpi-unit">{unit}</span>' if unit else ""
-    delta_html = f'<div class="{delta_cls}">{delta}</div>' if delta else ""
-    subtitle_html = (f'<div style="font-size:.72rem;color:{C["gold"]};'
-                     f'font-weight:600;margin-top:3px;line-height:1.3">{subtitle}</div>') if subtitle else ""
-    return f"""
-    <div class="kpi-card" style="border-top-color:{color}">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-        <span style="font-size:1.4rem;line-height:1">{icon_str}</span>
-        <div>
-          <div class="kpi-label" style="margin-bottom:0">{label}</div>
-          {subtitle_html}
-        </div>
-      </div>
-      <div class="kpi-value">{value}{unit_html}</div>
-      {delta_html}
-    </div>"""
+    delta_html = f'<p class="{delta_cls}" style="margin:4px 0 0">{delta}</p>' if delta else ""
+    subtitle_html = (f'<p style="font-size:.72rem;color:{C["gold"]};font-weight:600;'
+                     f'margin:2px 0 0;line-height:1.3">{subtitle}</p>') if subtitle else ""
+    return (
+        f'<div class="kpi-card" style="border-top-color:{color}">'
+        f'<p style="font-size:1.5rem;margin:0 0 4px">{icon_str}</p>'
+        f'<p class="kpi-label" style="margin:0">{label}</p>'
+        f'{subtitle_html}'
+        f'<p class="kpi-value" style="margin:6px 0 0">{value}{unit_html}</p>'
+        f'{delta_html}'
+        f'</div>'
+    )
 
 
 # ─── Gráficos ─────────────────────────────────────────────────────────────────
