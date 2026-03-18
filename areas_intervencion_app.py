@@ -293,14 +293,60 @@ def _delta_str(val, prev, fmt_fn) -> tuple[str, str]:
 
 # ─── Componente KPI ──────────────────────────────────────────────────────────
 
+_ICON_MAP = [
+    ("cajero",          "🏧"),
+    ("corresponsal",    "🏪"),
+    ("oficina",         "🏦"),
+    ("auxiliar",        "🏢"),
+    ("total punto",     "📍"),
+    ("spi",             "📊"),
+    ("pib",             "📊"),
+    ("adulto",          "👤"),
+    ("mujer",           "👩"),
+    ("rural",           "🌾"),
+    ("pago digital",    "📱"),
+    ("préstamo",        "💰"),
+    ("prestamo",        "💰"),
+    ("ahorro",          "🏦"),
+    ("crédito",         "💵"),
+    ("credito",         "💵"),
+    ("microcrédit",     "🏪"),
+    ("microcredit",     "🏪"),
+    ("mora",            "⚠️"),
+    ("queja",           "📝"),
+    ("reclamo",         "📝"),
+    ("bono desarrollo", "👨‍👩‍👧"),
+    ("bdh",             "👨‍👩‍👧"),
+    ("1000 día",        "👶"),
+    ("1000 dia",        "👶"),
+    ("mis mejores",     "👴"),
+    ("toda una vida",   "🧓"),
+    ("gallegos",        "♿"),
+    ("total",           "🔢"),
+    ("persona",         "👥"),
+]
+
+
+def _icon_for(label: str) -> str:
+    low = label.lower()
+    for key, icon in _ICON_MAP:
+        if key in low:
+            return icon
+    return "📌"
+
+
 def kpi_card(label: str, value: str, unit: str = "",
              delta: str = "", delta_cls: str = "kpi-delta-neu",
-             color: str = C["blue"]) -> str:
+             color: str = C["blue"], icon: str = "") -> str:
+    icon_str = icon or _icon_for(label)
     unit_html = f'<span class="kpi-unit">{unit}</span>' if unit else ""
     delta_html = f'<div class="{delta_cls}">{delta}</div>' if delta else ""
     return f"""
     <div class="kpi-card" style="border-top-color:{color}">
-      <div class="kpi-label">{label}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:1.4rem;line-height:1">{icon_str}</span>
+        <div class="kpi-label" style="margin-bottom:0">{label}</div>
+      </div>
       <div class="kpi-value">{value}{unit_html}</div>
       {delta_html}
     </div>"""
