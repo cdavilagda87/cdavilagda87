@@ -723,7 +723,7 @@ def render_intervencion2(df: pd.DataFrame, df_mdh: pd.DataFrame):
         prev_total_gral = int(df_mdh[df_mdh["periodo"] == prev_año_gral]["total"].sum()) if prev_año_gral else 0
         dt_gral, dt_cls_gral = _delta_str(total_gral, prev_total_gral, fmt_entero)
 
-        kpi_mdh = [("Total", f"{total_gral:,}", "personas", dt_gral, dt_cls_gral)]
+        kpi_mdh = [("Total", _es(f"{total_gral:,}"), "personas", dt_gral, dt_cls_gral)]
         for tipo in tipos:
             tot = int(df_ult[df_ult["tipo_transferencia"] == tipo]["total"].sum())
             prev_año = años[-2] if len(años) > 1 else None
@@ -731,7 +731,7 @@ def render_intervencion2(df: pd.DataFrame, df_mdh: pd.DataFrame):
                                    (df_mdh["tipo_transferencia"] == tipo)]["total"].sum()) if prev_año else 0
             dt, dt_cls = _delta_str(tot, prev_tot, fmt_entero)
             lbl = tipo[:40]
-            kpi_mdh.append((lbl, f"{tot:,}", "personas", dt, dt_cls))
+            kpi_mdh.append((lbl, _es(f"{tot:,}"), "personas", dt, dt_cls))
         _render_kpis(kpi_mdh, AREA_COLORS[1])
 
         st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
@@ -765,7 +765,7 @@ def render_intervencion2(df: pd.DataFrame, df_mdh: pd.DataFrame):
                 xaxis=dict(gridcolor="#E8EDF3",
                            tickmode="array",
                            tickvals=[str(a) for a in sorted(por_año_tipo["periodo"].unique())]),
-                yaxis=dict(gridcolor="#E8EDF3", title="Personas"),
+                yaxis=dict(gridcolor="#E8EDF3", title="Personas", tickformat=",.0f"),
                 legend=dict(orientation="h", y=-0.28, font_size=10),
                 **_CHART_CFG,
             )
@@ -783,14 +783,14 @@ def render_intervencion2(df: pd.DataFrame, df_mdh: pd.DataFrame):
             fig2 = go.Figure(go.Bar(
                 x=por_edad["edad"], y=por_edad["total"],
                 marker_color=AREA_COLORS[1],
-                text=por_edad["total"].apply(lambda x: f"{int(x):,}"),
+                text=por_edad["total"].apply(lambda x: _es(f"{int(x):,}")),
                 textposition="outside",
                 hovertemplate="<b>%{x}</b><br>%{y:,.0f} personas<extra></extra>",
             ))
             fig2.update_layout(
                 title=f"Distribución por rango de edad — {año_sel}",
                 xaxis=dict(gridcolor="#E8EDF3", tickangle=-20),
-                yaxis=dict(gridcolor="#E8EDF3", title="Personas"),
+                yaxis=dict(gridcolor="#E8EDF3", title="Personas", tickformat=",.0f"),
                 **_CHART_CFG,
             )
             st.plotly_chart(fig2, use_container_width=True)
