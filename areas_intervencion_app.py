@@ -127,7 +127,7 @@ def apply_css():
         min-height: 108px;
     }}
     .kpi-label {{
-        font-size: .60rem;
+        font-size: .52rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: .08em;
@@ -347,7 +347,7 @@ def kpi_card(label: str, value: str, unit: str = "",
     return (
         f'<div class="kpi-card" style="border-top-color:{color}">'
         f'<p style="font-size:1.5rem;margin:0 0 4px">{icon_str}</p>'
-        f'<p class="kpi-label" style="margin:0">{label}</p>'
+        f'<p class="kpi-label" style="margin:0;font-size:.52rem">{label}</p>'
         f'{subtitle_html}'
         f'<p class="kpi-value" style="margin:6px 0 0">{value}{unit_html}</p>'
         f'{delta_html}'
