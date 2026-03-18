@@ -65,6 +65,7 @@ _CHART_CFG = dict(
     font=dict(color=C["navy"], size=11, family="Arial, sans-serif"),
     title_font=dict(color=C["navy"], size=13, family="Arial, sans-serif"),
     hoverlabel=dict(bgcolor="white", bordercolor=C["blue"], font_size=11),
+    separators=",.",
 )
 
 
@@ -239,10 +240,21 @@ def apply_css():
 
 # ─── Formatters por tipo de variable ────────────────────────────────────────
 
+def _es(s: str) -> str:
+    """Convierte formato inglés (1,234.56) a español (1.234,56)."""
+    if "," in s and "." in s:
+        return s.replace(",", "X").replace(".", ",").replace("X", ".")
+    elif "," in s:
+        return s.replace(",", ".")
+    elif "." in s:
+        return s.replace(".", ",")
+    return s
+
+
 def fmt_entero(n) -> tuple[str, str]:
     """Conteo entero, sin abreviatura."""
     try:
-        return f"{int(float(n)):,}", ""
+        return _es(f"{int(float(n)):,}"), ""
     except Exception:
         return "—", ""
 
@@ -250,7 +262,7 @@ def fmt_entero(n) -> tuple[str, str]:
 def fmt_millones_usd(n) -> tuple[str, str]:
     """Valor ya expresado en millones de USD."""
     try:
-        return f"{float(n):,.2f}", "mill. USD"
+        return _es(f"{float(n):,.2f}"), "mill. USD"
     except Exception:
         return "—", ""
 
@@ -258,7 +270,7 @@ def fmt_millones_usd(n) -> tuple[str, str]:
 def fmt_pct_proporcion(n) -> tuple[str, str]:
     """Proporción 0–1 → porcentaje."""
     try:
-        return f"{float(n) * 100:.1f}", "%"
+        return _es(f"{float(n) * 100:.1f}"), "%"
     except Exception:
         return "—", ""
 
@@ -266,7 +278,7 @@ def fmt_pct_proporcion(n) -> tuple[str, str]:
 def fmt_pct_directa(n) -> tuple[str, str]:
     """Valor ya en puntos porcentuales (e.g. 5.5 → '5.5 %')."""
     try:
-        return f"{float(n):.2f}", "%"
+        return _es(f"{float(n):.2f}"), "%"
     except Exception:
         return "—", ""
 
@@ -285,7 +297,7 @@ def _delta_str(val, prev, fmt_fn) -> tuple[str, str]:
         if prev == 0 or pd.isna(prev) or pd.isna(val):
             return "", "kpi-delta-neu"
         pct = (float(val) - float(prev)) / abs(float(prev)) * 100
-        texto = f"{'▲' if pct >= 0 else '▼'} {abs(pct):.1f}% vs período anterior"
+        texto = f"{'▲' if pct >= 0 else '▼'} {_es(f'{abs(pct):.1f}')}% vs período anterior"
         clase = "kpi-delta-up" if pct >= 0 else "kpi-delta-down"
         return texto, clase
     except Exception:
@@ -377,7 +389,7 @@ def line_fig(df: pd.DataFrame, x: str, y_cols: list[str],
     fig.update_layout(
         title=title,
         xaxis=dict(gridcolor="#E8EDF3", title="", linecolor=C["lgray"]),
-        yaxis=dict(gridcolor="#E8EDF3", linecolor=C["lgray"]),
+        yaxis=dict(gridcolor="#E8EDF3", linecolor=C["lgray"], tickformat=",.0f"),
         legend=dict(orientation="h", y=-0.28, x=0, font_size=10),
         **_CHART_CFG,
     )
@@ -398,9 +410,10 @@ def bar_fig(df: pd.DataFrame, x: str, y_cols: list[str],
             marker_color=PALETTE[i % len(PALETTE)],
             hovertemplate=f"<b>{lbl}</b><br>%{{x}}: %{{y:.1f}}{'%' if pct_axis else ''}<extra></extra>",
         ))
-    y_cfg = dict(gridcolor="#E8EDF3", linecolor=C["lgray"])
+    y_cfg = dict(gridcolor="#E8EDF3", linecolor=C["lgray"], tickformat=",.0f")
     if pct_axis:
         y_cfg["ticksuffix"] = "%"
+        y_cfg["tickformat"] = ",.1f"
     fig.update_layout(
         title=title, barmode="group",
         xaxis=dict(gridcolor="#E8EDF3", linecolor=C["lgray"]),
