@@ -977,6 +977,8 @@ def render_overview(d1, d2, d3, d4):
         (d4, "fecha",   [c for c in d4.columns if c != "fecha"][0],   fmt_entero, "casos"),
     ]
 
+    AREA_ICONS = ["📍", "💳", "💵", "📝"]
+
     cols = st.columns(4)
     for i, (df, x_col, metric, fn, extra_unit) in enumerate(area_data):
         with cols[i]:
@@ -994,7 +996,7 @@ def render_overview(d1, d2, d3, d4):
             nota = f"Último: {periodo} · {n} {freq}"
             st.markdown(
                 kpi_card(AREA_LABELS[i][:35], val, unit, nota, "kpi-delta-neu",
-                         AREA_COLORS[i]),
+                         AREA_COLORS[i], icon=AREA_ICONS[i]),
                 unsafe_allow_html=True,
             )
 
