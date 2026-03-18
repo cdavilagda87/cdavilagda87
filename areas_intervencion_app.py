@@ -685,15 +685,15 @@ def render_intervencion2(df: pd.DataFrame, df_mdh: pd.DataFrame):
             fig1 = go.Figure()
             for i, tipo in enumerate(tipo_sel):
                 d = por_año_tipo[por_año_tipo["tipo_transferencia"] == tipo]
-                fig1.add_trace(go.Scatter(
+                fig1.add_trace(go.Bar(
                     x=d["periodo"].astype(str), y=d["total"],
-                    mode="lines+markers", name=tipo[:45],
-                    line=dict(color=PALETTE[i % len(PALETTE)], width=2.2),
-                    marker=dict(size=7),
+                    name=tipo[:45],
+                    marker_color=PALETTE[i % len(PALETTE)],
                     hovertemplate=f"<b>{tipo[:40]}</b><br>%{{x}}: %{{y:,.0f}} personas<extra></extra>",
                 ))
             fig1.update_layout(
                 title="Evolución anual — Personas por tipo de transferencia",
+                barmode="group",
                 xaxis=dict(gridcolor="#E8EDF3",
                            tickmode="array",
                            tickvals=[str(a) for a in sorted(por_año_tipo["periodo"].unique())]),
