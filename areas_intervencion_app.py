@@ -337,15 +337,21 @@ def _icon_for(label: str) -> str:
 
 def kpi_card(label: str, value: str, unit: str = "",
              delta: str = "", delta_cls: str = "kpi-delta-neu",
-             color: str = C["blue"], icon: str = "") -> str:
+             color: str = C["blue"], icon: str = "",
+             subtitle: str = "") -> str:
     icon_str = icon or _icon_for(label)
     unit_html = f'<span class="kpi-unit">{unit}</span>' if unit else ""
     delta_html = f'<div class="{delta_cls}">{delta}</div>' if delta else ""
+    subtitle_html = (f'<div style="font-size:.72rem;color:{C["gold"]};'
+                     f'font-weight:600;margin-top:3px;line-height:1.3">{subtitle}</div>') if subtitle else ""
     return f"""
     <div class="kpi-card" style="border-top-color:{color}">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
         <span style="font-size:1.4rem;line-height:1">{icon_str}</span>
-        <div class="kpi-label" style="margin-bottom:0">{label}</div>
+        <div>
+          <div class="kpi-label" style="margin-bottom:0">{label}</div>
+          {subtitle_html}
+        </div>
       </div>
       <div class="kpi-value">{value}{unit_html}</div>
       {delta_html}
@@ -970,11 +976,17 @@ def render_overview(d1, d2, d3, d4):
     st.markdown('<div class="section-title">Estado Actual por Área de Intervención</div>',
                 unsafe_allow_html=True)
 
+    # Métrica representativa por área
+    m1 = next((c for c in d1.columns if "total punto" in c.lower()), [c for c in d1.columns if c != "periodo"][-1])
+    m2 = [c for c in d2.columns if c != "año"][0]
+    m3 = [c for c in d3.columns if c != "fecha"][0]
+    m4 = [c for c in d4.columns if c != "fecha"][0]
+
     area_data = [
-        (d1, "periodo", [c for c in d1.columns if c != "periodo"][0], fmt_entero, ""),
-        (d2, "año",     [c for c in d2.columns if c != "año"][0],     fmt_pct_proporcion, ""),
-        (d3, "fecha",   [c for c in d3.columns if c != "fecha"][0],   fmt_millones_usd, ""),
-        (d4, "fecha",   [c for c in d4.columns if c != "fecha"][0],   fmt_entero, "casos"),
+        (d1, "periodo", m1, fmt_entero,        ""),
+        (d2, "año",     m2, fmt_pct_proporcion, ""),
+        (d3, "fecha",   m3, fmt_millones_usd,   ""),
+        (d4, "fecha",   m4, fmt_entero,         "casos"),
     ]
 
     AREA_ICONS = ["📍", "💳", "💵", "📝"]
@@ -996,7 +1008,8 @@ def render_overview(d1, d2, d3, d4):
             nota = f"Último: {periodo} · {n} {freq}"
             st.markdown(
                 kpi_card(AREA_LABELS[i][:35], val, unit, nota, "kpi-delta-neu",
-                         AREA_COLORS[i], icon=AREA_ICONS[i]),
+                         AREA_COLORS[i], icon=AREA_ICONS[i],
+                         subtitle=_label(metric)),
                 unsafe_allow_html=True,
             )
 
