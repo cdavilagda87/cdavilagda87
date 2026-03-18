@@ -442,6 +442,19 @@ def load_intervencion1_anual() -> pd.DataFrame:
 
 
 @st.cache_data(ttl=600, show_spinner=False)
+def load_intervencion2_mdh() -> pd.DataFrame:
+    """Transferencias MDH — por año, tipo y edad."""
+    wb = openpyxl.load_workbook(EXCEL_PATH, data_only=True, read_only=True)
+    ws = wb["Intervención 2 - MDH"]
+    rows = list(ws.iter_rows(values_only=True))
+    wb.close()
+    df = pd.DataFrame(rows[1:], columns=["periodo", "tipo_transferencia", "edad", "total"])
+    df["periodo"] = pd.to_numeric(df["periodo"], errors="coerce").astype("Int64")
+    df["total"] = pd.to_numeric(df["total"], errors="coerce")
+    return df.dropna(subset=["periodo", "tipo_transferencia"]).reset_index(drop=True)
+
+
+@st.cache_data(ttl=600, show_spinner=False)
 def load_intervencion2() -> pd.DataFrame:
     """Oferta de servicios — anual (Global Findex), valores proporción 0-1."""
     wb = openpyxl.load_workbook(EXCEL_PATH, data_only=True, read_only=True)
@@ -583,7 +596,7 @@ def render_intervencion1(df: pd.DataFrame, df_anual: pd.DataFrame):
             st.dataframe(df_anual, use_container_width=True)
 
 
-def render_intervencion2(df: pd.DataFrame):
+def render_intervencion2(df: pd.DataFrame, df_mdh: pd.DataFrame):
     st.markdown(
         f'<span class="area-badge" style="background:{AREA_COLORS[1]}">'
         f'{AREA_LABELS[1]}</span>',
@@ -627,6 +640,113 @@ def render_intervencion2(df: pd.DataFrame):
                 lambda x: f"{float(x)*100:.1f} %" if pd.notna(x) else "—"
             )
         st.dataframe(disp, use_container_width=True)
+
+    # ── Transferencias MDH ────────────────────────────────────────────────────
+    if not df_mdh.empty:
+        st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Transferencias MDH — Personas incluidas</div>',
+                    unsafe_allow_html=True)
+
+        años = sorted(df_mdh["periodo"].dropna().unique())
+        tipos = sorted(df_mdh["tipo_transferencia"].dropna().unique())
+
+        # KPIs: total por tipo en el último año
+        ult_año = años[-1]
+        df_ult = df_mdh[df_mdh["periodo"] == ult_año]
+        total_gral = int(df_ult["total"].sum())
+
+        kpi_mdh = [(f"Total {ult_año}", f"{total_gral:,}", "personas", "", "kpi-delta-neu")]
+        for tipo in tipos:
+            tot = int(df_ult[df_ult["tipo_transferencia"] == tipo]["total"].sum())
+            prev_año = años[-2] if len(años) > 1 else None
+            prev_tot = int(df_mdh[(df_mdh["periodo"] == prev_año) &
+                                   (df_mdh["tipo_transferencia"] == tipo)]["total"].sum()) if prev_año else 0
+            dt, dt_cls = _delta_str(tot, prev_tot, fmt_entero)
+            lbl = tipo[:40]
+            kpi_mdh.append((lbl, f"{tot:,}", "personas", dt, dt_cls))
+        _render_kpis(kpi_mdh, AREA_COLORS[1])
+
+        st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
+
+        # Selectores
+        sc1, sc2 = st.columns(2)
+        with sc1:
+            año_sel = st.selectbox("Año", años, index=len(años)-1, key="mdh_año")
+        with sc2:
+            tipo_sel = st.multiselect("Tipo de transferencia", tipos, default=tipos, key="mdh_tipo")
+
+        df_f = df_mdh[(df_mdh["periodo"] == año_sel) &
+                      (df_mdh["tipo_transferencia"].isin(tipo_sel))]
+
+        # Gráfico 1: total por tipo
+        if not df_f.empty:
+            por_tipo = df_f.groupby("tipo_transferencia")["total"].sum().reset_index()
+            fig1 = go.Figure(go.Bar(
+                x=por_tipo["tipo_transferencia"],
+                y=por_tipo["total"],
+                marker_color=[PALETTE[i % len(PALETTE)] for i in range(len(por_tipo))],
+                text=por_tipo["total"].apply(lambda x: f"{int(x):,}"),
+                textposition="outside",
+                hovertemplate="<b>%{x}</b><br>%{y:,.0f} personas<extra></extra>",
+            ))
+            fig1.update_layout(
+                title=f"Personas por tipo de transferencia — {año_sel}",
+                xaxis=dict(gridcolor="#E8EDF3", tickangle=-20),
+                yaxis=dict(gridcolor="#E8EDF3", title="Personas"),
+                **_CHART_CFG,
+            )
+            st.plotly_chart(fig1, use_container_width=True)
+
+            # Gráfico 2: distribución por edad
+            por_edad = df_f.groupby("edad")["total"].sum().reset_index()
+            orden_edad = ['De 18-29','De 30-39','De 40-49','De 50-59','De 60-64',
+                          'De 65-74','De 75-84','De 85-99','Mayor o igual a 100']
+            por_edad["_ord"] = por_edad["edad"].apply(
+                lambda x: orden_edad.index(x) if x in orden_edad else 99)
+            por_edad = por_edad.sort_values("_ord").drop(columns=["_ord"])
+
+            fig2 = go.Figure(go.Bar(
+                x=por_edad["edad"],
+                y=por_edad["total"],
+                marker_color=AREA_COLORS[1],
+                text=por_edad["total"].apply(lambda x: f"{int(x):,}"),
+                textposition="outside",
+                hovertemplate="<b>%{x}</b><br>%{y:,.0f} personas<extra></extra>",
+            ))
+            fig2.update_layout(
+                title=f"Distribución por rango de edad — {año_sel}",
+                xaxis=dict(gridcolor="#E8EDF3", tickangle=-20),
+                yaxis=dict(gridcolor="#E8EDF3", title="Personas"),
+                **_CHART_CFG,
+            )
+            st.plotly_chart(fig2, use_container_width=True)
+
+            # Gráfico 3: evolución anual por tipo
+            st.markdown('<div class="section-title">Evolución anual por tipo de transferencia</div>',
+                        unsafe_allow_html=True)
+            por_año_tipo = df_mdh[df_mdh["tipo_transferencia"].isin(tipo_sel)]\
+                .groupby(["periodo", "tipo_transferencia"])["total"].sum().reset_index()
+            fig3 = go.Figure()
+            for i, tipo in enumerate(tipo_sel):
+                d = por_año_tipo[por_año_tipo["tipo_transferencia"] == tipo]
+                fig3.add_trace(go.Bar(
+                    x=d["periodo"].astype(str), y=d["total"],
+                    name=tipo[:45],
+                    marker_color=PALETTE[i % len(PALETTE)],
+                    hovertemplate=f"<b>{tipo[:40]}</b><br>%{{x}}: %{{y:,.0f}} personas<extra></extra>",
+                ))
+            fig3.update_layout(
+                title="Evolución anual — Personas por tipo de transferencia",
+                barmode="group",
+                xaxis=dict(gridcolor="#E8EDF3"),
+                yaxis=dict(gridcolor="#E8EDF3", title="Personas"),
+                legend=dict(orientation="h", y=-0.28, font_size=10),
+                **_CHART_CFG,
+            )
+            st.plotly_chart(fig3, use_container_width=True)
+
+        with st.expander("Ver datos MDH"):
+            st.dataframe(df_mdh, use_container_width=True)
 
 
 def render_intervencion3(df: pd.DataFrame):
@@ -937,6 +1057,7 @@ def main():
         d1 = load_intervencion1()
         d1_anual = load_intervencion1_anual()
         d2 = load_intervencion2()
+        d2_mdh = load_intervencion2_mdh()
         d3 = load_intervencion3()
         d4 = load_intervencion4()
 
@@ -955,7 +1076,7 @@ def main():
         render_intervencion1(d1, d1_anual)
 
     with tabs[2]:
-        render_intervencion2(d2)
+        render_intervencion2(d2, d2_mdh)
 
     with tabs[3]:
         render_intervencion3(d3)
