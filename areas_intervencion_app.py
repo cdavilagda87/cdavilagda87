@@ -706,8 +706,11 @@ def render_intervencion2(df: pd.DataFrame, df_mdh: pd.DataFrame):
         ult_año = años[-1]
         df_ult = df_mdh[df_mdh["periodo"] == ult_año]
         total_gral = int(df_ult["total"].sum())
+        prev_año_gral = años[-2] if len(años) > 1 else None
+        prev_total_gral = int(df_mdh[df_mdh["periodo"] == prev_año_gral]["total"].sum()) if prev_año_gral else 0
+        dt_gral, dt_cls_gral = _delta_str(total_gral, prev_total_gral, fmt_entero)
 
-        kpi_mdh = [(f"Total {ult_año}", f"{total_gral:,}", "personas", "", "kpi-delta-neu")]
+        kpi_mdh = [("Total", f"{total_gral:,}", "personas", dt_gral, dt_cls_gral)]
         for tipo in tipos:
             tot = int(df_ult[df_ult["tipo_transferencia"] == tipo]["total"].sum())
             prev_año = años[-2] if len(años) > 1 else None
